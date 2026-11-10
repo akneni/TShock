@@ -207,6 +207,14 @@ To spawn near an online player, pass a URL-encoded command as `cmd`, such as
 The token must have `tshock.rest.command` and the corresponding
 `tshock.npc.spawnmob` or `tshock.npc.spawnboss` permission.
 
+To grant a vanilla buff or debuff to an online player, pass
+`/granteffect <effect name or ID> <player> <seconds>` as `cmd`. For example,
+`/v3/server/rawcmd?cmd=%2Fgranteffect%20Ironskin%20Alice%2060&token=token`.
+Quote effect names containing spaces in the command before URL encoding them,
+such as `/granteffect "Obsidian Skin" Alice 60`. Use `/granteffect list` to
+return every supported effect ID and name. The token also needs
+`tshock.buff.others`. See [the effect list](granteffect-effects.md).
+
 ## ServerMotd
 Returns the motd, if it exists.
 No special permissions are required for this route.

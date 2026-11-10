@@ -548,6 +548,10 @@ namespace TShockAPI
 			{
 				HelpText = GetString("Gives another player a buff or debuff for an amount of time. Putting -1 for time will set it to 415 days.")
 			});
+			add(new Command(Permissions.buffplayer, GrantEffect, "granteffect")
+			{
+				HelpText = GetString("Grants a vanilla buff or debuff to an online player for a number of seconds. Use 'granteffect list' to see available effects.")
+			});
 			add(new Command(Permissions.godmode, ToggleGodMode, "godmode", "god")
 			{
 				HelpText = GetString("Toggles godmode on a player.")
@@ -6623,6 +6627,74 @@ namespace TShockAPI
 			}
 			else
 				user.SendErrorMessage(GetString($"\"{id}\" is not a valid buff ID!"));
+		}
+
+		private static void GrantEffect(CommandArgs args)
+		{
+			if (args.Parameters.Count == 1 && args.Parameters[0].Equals("list", StringComparison.OrdinalIgnoreCase))
+			{
+				for (int effectId = 1; effectId < Terraria.ID.BuffID.Count; effectId++)
+				{
+					string name = TShock.Utils.GetBuffName(effectId);
+					args.Player.SendInfoMessage(GetString("{0}: {1}", effectId, string.IsNullOrWhiteSpace(name) ? GetString("Unnamed effect") : name));
+				}
+				return;
+			}
+
+			if (args.Parameters.Count != 3)
+			{
+				args.Player.SendErrorMessage(GetString("Invalid syntax. Proper syntax: {0}granteffect <effect name or ID> <player> <seconds>, or {0}granteffect list.", Specifier));
+				return;
+			}
+
+			const int maxSeconds = (int.MaxValue / 60) - 1;
+			if (!int.TryParse(args.Parameters[2], out int seconds) || seconds <= 0 || seconds > maxSeconds)
+			{
+				args.Player.SendErrorMessage(GetString("Seconds must be a positive whole number no greater than {0}.", maxSeconds));
+				return;
+			}
+
+			var players = TShock.Players.Where(p => p != null && p.RealPlayer && p.Active &&
+				string.Equals(p.Name, args.Parameters[1], StringComparison.OrdinalIgnoreCase)).ToList();
+			if (players.Count == 0)
+			{
+				args.Player.SendErrorMessage(GetString("Invalid player."));
+				return;
+			}
+			if (players.Count > 1)
+			{
+				args.Player.SendMultipleMatchError(players.Select(p => p.Name));
+				return;
+			}
+
+			int id;
+			if (!int.TryParse(args.Parameters[0], out id))
+			{
+				var effects = TShock.Utils.GetBuffByName(args.Parameters[0]);
+				if (effects.Count == 0)
+				{
+					args.Player.SendErrorMessage(GetString("Invalid effect."));
+					return;
+				}
+				if (effects.Count > 1)
+				{
+					args.Player.SendMultipleMatchError(effects.Select(effectId => $"{Lang.GetBuffName(effectId)}({effectId})"));
+					return;
+				}
+				id = effects[0];
+			}
+			if (id <= 0 || id >= Terraria.ID.BuffID.Count)
+			{
+				args.Player.SendErrorMessage(GetString("Invalid effect ID."));
+				return;
+			}
+
+			TSPlayer target = players[0];
+			target.SetBuff(id, seconds * 60);
+			string effectName = TShock.Utils.GetBuffName(id);
+			args.Player.SendSuccessMessage(GetString("Granted {0} ({1}) to {2} for {3} seconds.", effectName, id, target.Name, seconds));
+			if (!args.Silent && target != args.Player)
+				target.SendSuccessMessage(GetString("{0} granted you {1} for {2} seconds.", args.Player.Name, effectName, seconds));
 		}
 
 		private static void GBuff(CommandArgs args)

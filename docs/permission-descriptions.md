@@ -36,7 +36,7 @@ User can buff self.
 
 ## tshock.buff.others
 User can buff other players.
-* **Commands**: `/gbuff (/buffplayer)`
+* **Commands**: `/gbuff (/buffplayer)`, `/granteffect`
 
 ## tshock.npc.butcher
 User can kill all enemy npcs.
