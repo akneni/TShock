@@ -201,6 +201,12 @@ Executes a remote command on the server, and returns the output of the command.
 
 **Example Usage**: `/v3/server/rawcmd?cmd=cmd&token=token`
 
+To spawn near an online player, pass a URL-encoded command as `cmd`, such as
+`/v3/server/rawcmd?cmd=%2Fspawnmob%20zombie%203%20Alice&token=token` or
+`/v3/server/rawcmd?cmd=%2Fspawnboss%20eye%201%20Alice&token=token`.
+The token must have `tshock.rest.command` and the corresponding
+`tshock.npc.spawnmob` or `tshock.npc.spawnboss` permission.
+
 ## ServerMotd
 Returns the motd, if it exists.
 No special permissions are required for this route.
@@ -397,4 +403,3 @@ Save the world.
 * `token` (Required) `[String]` - The REST authentication token.
 
 **Example Usage**: `/v2/world/save?token=token`
-

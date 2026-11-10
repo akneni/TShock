@@ -408,13 +408,11 @@ namespace TShockAPI
 			});
 			add(new Command(Permissions.spawnboss, SpawnBoss, "spawnboss", "sb")
 			{
-				AllowServer = false,
-				HelpText = GetString("Spawns a number of bosses around you.")
+				HelpText = GetString("Spawns a number of bosses around you or a named player.")
 			});
 			add(new Command(Permissions.spawnmob, SpawnMob, "spawnmob", "sm")
 			{
-				AllowServer = false,
-				HelpText = GetString("Spawns a number of mobs around you.")
+				HelpText = GetString("Spawns a number of mobs around you or a named player.")
 			});
 			add(new Command(Permissions.spawnrate, SpawnRate, "spawnrate")
 			{
@@ -2704,20 +2702,50 @@ namespace TShockAPI
 			args.Player.SendSuccessMessage(GetString("World evil switched to {0}.", _crimsonOrCorruption));
 		}
 
+		private static TSPlayer GetSpawnTarget(CommandArgs args)
+		{
+			if (args.Parameters.Count < 3)
+			{
+				if (args.Player.RealPlayer)
+					return args.Player;
+
+				args.Player.SendErrorMessage(GetString("You must specify an online player as the last argument."));
+				return null;
+			}
+
+			var players = TShock.Players.Where(p => p != null && p.RealPlayer && p.Active &&
+				string.Equals(p.Name, args.Parameters[2], StringComparison.OrdinalIgnoreCase)).ToList();
+			if (players.Count == 0)
+			{
+				args.Player.SendErrorMessage(GetString("Invalid player."));
+				return null;
+			}
+			if (players.Count > 1)
+			{
+				args.Player.SendMultipleMatchError(players.Select(p => p.Name));
+				return null;
+			}
+
+			return players[0];
+		}
+
 		private static void SpawnBoss(CommandArgs args)
 		{
-			if (args.Parameters.Count < 1 || args.Parameters.Count > 2)
+			if (args.Parameters.Count < 1 || args.Parameters.Count > 3)
 			{
-				args.Player.SendErrorMessage(GetString("Invalid syntax. Proper syntax: {0}spawnboss <boss type> [amount].", Specifier));
+				args.Player.SendErrorMessage(GetString("Invalid syntax. Proper syntax: {0}spawnboss <boss type> [amount] [player].", Specifier));
 				return;
 			}
 
 			int amount = 1;
-			if (args.Parameters.Count == 2 && (!int.TryParse(args.Parameters[1], out amount) || amount <= 0))
+			if (args.Parameters.Count >= 2 && (!int.TryParse(args.Parameters[1], out amount) || amount <= 0))
 			{
 				args.Player.SendErrorMessage(GetString("Invalid boss amount."));
 				return;
 			}
+			TSPlayer spawnPlayer = GetSpawnTarget(args);
+			if (spawnPlayer == null)
+				return;
 
 
 			string spawnName;
@@ -2731,7 +2759,7 @@ namespace TShockAPI
 					foreach (int i in npcIds)
 					{
 						npc.SetDefaults(i);
-						TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+						TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					}
 					spawnName = GetString("all bosses");
 					break;
@@ -2740,28 +2768,28 @@ namespace TShockAPI
 				case "brain of cthulhu":
 				case "boc":
 					npc.SetDefaults(266);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Brain of Cthulhu");
 					break;
 
 				case "destroyer":
 					npc.SetDefaults(134);
 					TSPlayer.Server.SetTime(false, 0.0);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Destroyer");
 					break;
 				case "duke":
 				case "duke fishron":
 				case "fishron":
 					npc.SetDefaults(370);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Duke Fishron");
 					break;
 				case "eater":
 				case "eater of worlds":
 				case "eow":
 					npc.SetDefaults(13);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Eater of Worlds");
 					break;
 				case "eye":
@@ -2769,51 +2797,51 @@ namespace TShockAPI
 				case "eoc":
 					npc.SetDefaults(4);
 					TSPlayer.Server.SetTime(false, 0.0);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Eye of Cthulhu");
 					break;
 				case "golem":
 					npc.SetDefaults(245);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Golem");
 					break;
 				case "king":
 				case "king slime":
 				case "ks":
 					npc.SetDefaults(50);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the King Slime");
 					break;
 				case "plantera":
 					npc.SetDefaults(262);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Plantera");
 					break;
 				case "prime":
 				case "skeletron prime":
 					npc.SetDefaults(127);
 					TSPlayer.Server.SetTime(false, 0.0);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Skeletron Prime");
 					break;
 				case "queen bee":
 				case "qb":
 					npc.SetDefaults(222);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Queen Bee");
 					break;
 				case "skeletron":
 					npc.SetDefaults(35);
 					TSPlayer.Server.SetTime(false, 0.0);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Skeletron");
 					break;
 				case "twins":
 					TSPlayer.Server.SetTime(false, 0.0);
 					npc.SetDefaults(125);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					npc.SetDefaults(126);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Twins");
 					break;
 				case "wof":
@@ -2823,32 +2851,32 @@ namespace TShockAPI
 						args.Player.SendErrorMessage(GetString("There is already a Wall of Flesh."));
 						return;
 					}
-					if (args.Player.Y / 16f < Main.maxTilesY - 205)
+					if (spawnPlayer.Y / 16f < Main.maxTilesY - 205)
 					{
 						args.Player.SendErrorMessage(GetString("You must spawn the Wall of Flesh in hell."));
 						return;
 					}
-					NPC.SpawnWOF(new Vector2(args.Player.X, args.Player.Y));
+					NPC.SpawnWOF(new Vector2(spawnPlayer.X, spawnPlayer.Y));
 					spawnName = GetString("the Wall of Flesh");
 					break;
 				case "moon":
 				case "moon lord":
 				case "ml":
 					npc.SetDefaults(398);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Moon Lord");
 					break;
 				case "empress":
 				case "empress of light":
 				case "eol":
 					npc.SetDefaults(636);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Empress of Light");
 					break;
 				case "queen slime":
 				case "qs":
 					npc.SetDefaults(657);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Queen Slime");
 					break;
 				case "lunatic":
@@ -2856,75 +2884,75 @@ namespace TShockAPI
 				case "cultist":
 				case "lc":
 					npc.SetDefaults(439);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Lunatic Cultist");
 					break;
 				case "betsy":
 					npc.SetDefaults(551);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Betsy");
 					break;
 				case "flying dutchman":
 				case "flying":
 				case "dutchman":
 					npc.SetDefaults(491);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Flying Dutchman");
 					break;
 				case "mourning wood":
 					npc.SetDefaults(325);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Mourning Wood");
 					break;
 				case "pumpking":
 					npc.SetDefaults(327);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Pumpking");
 					break;
 				case "everscream":
 					npc.SetDefaults(344);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Everscream");
 					break;
 				case "santa-nk1":
 				case "santa":
 					npc.SetDefaults(346);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("Santa-NK1");
 					break;
 				case "ice queen":
 					npc.SetDefaults(345);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("the Ice Queen");
 					break;
 				case "martian saucer":
 					npc.SetDefaults(392);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("a Martian Saucer");
 					break;
 				case "solar pillar":
 					npc.SetDefaults(517);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("a Solar Pillar");
 					break;
 				case "nebula pillar":
 					npc.SetDefaults(507);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("a Nebula Pillar");
 					break;
 				case "vortex pillar":
 					npc.SetDefaults(422);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("a Vortex Pillar");
 					break;
 				case "stardust pillar":
 					npc.SetDefaults(493);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("a Stardust Pillar");
 					break;
 				case "deerclops":
 					npc.SetDefaults(668);
-					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, args.Player.TileX, args.Player.TileY);
+					TSPlayer.Server.SpawnNPC(npc.type, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY);
 					spawnName = GetString("a Deerclops");
 					break;
 				default:
@@ -2944,9 +2972,9 @@ namespace TShockAPI
 
 		private static void SpawnMob(CommandArgs args)
 		{
-			if (args.Parameters.Count < 1 || args.Parameters.Count > 2)
+			if (args.Parameters.Count < 1 || args.Parameters.Count > 3)
 			{
-				args.Player.SendErrorMessage(GetString("Invalid syntax. Proper syntax: {0}spawnmob <mob type> [amount].", Specifier));
+				args.Player.SendErrorMessage(GetString("Invalid syntax. Proper syntax: {0}spawnmob <mob type> [amount] [player].", Specifier));
 				return;
 			}
 			if (args.Parameters[0].Length == 0)
@@ -2956,13 +2984,16 @@ namespace TShockAPI
 			}
 
 			int amount = 1;
-			if (args.Parameters.Count == 2 && !int.TryParse(args.Parameters[1], out amount))
+			if (args.Parameters.Count >= 2 && !int.TryParse(args.Parameters[1], out amount))
 			{
-				args.Player.SendErrorMessage(GetString("Invalid syntax. Proper syntax: {0}spawnmob <mob type> [amount].", Specifier));
+				args.Player.SendErrorMessage(GetString("Invalid syntax. Proper syntax: {0}spawnmob <mob type> [amount] [player].", Specifier));
 				return;
 			}
 
 			amount = Math.Min(amount, Main.maxNPCs);
+			TSPlayer spawnPlayer = GetSpawnTarget(args);
+			if (spawnPlayer == null)
+				return;
 
 			var npcs = TShock.Utils.GetNPCByIdOrName(args.Parameters[0]);
 			if (npcs.Count == 0)
@@ -2978,7 +3009,7 @@ namespace TShockAPI
 				var npc = npcs[0];
 				if (npc.type >= 1 && npc.type < Terraria.ID.NPCID.Count && npc.type != 113)
 				{
-					TSPlayer.Server.SpawnNPC(npc.netID, npc.FullName, amount, args.Player.TileX, args.Player.TileY, 50, 20);
+					TSPlayer.Server.SpawnNPC(npc.netID, npc.FullName, amount, spawnPlayer.TileX, spawnPlayer.TileY, 50, 20);
 					if (args.Silent)
 					{
 						args.Player.SendSuccessMessage(GetPluralString("Spawned {0} {1} time.", "Spawned {0} {1} times.", amount, npc.FullName, amount));
@@ -2990,12 +3021,12 @@ namespace TShockAPI
 				}
 				else if (npc.type == 113)
 				{
-					if (Main.wofNPCIndex != -1 || (args.Player.Y / 16f < (Main.maxTilesY - 205)))
+					if (Main.wofNPCIndex != -1 || (spawnPlayer.Y / 16f < (Main.maxTilesY - 205)))
 					{
 						args.Player.SendErrorMessage(GetString("Unable to spawn a Wall of Flesh based on its current state or your current location."));
 						return;
 					}
-					NPC.SpawnWOF(new Vector2(args.Player.X, args.Player.Y));
+					NPC.SpawnWOF(new Vector2(spawnPlayer.X, spawnPlayer.Y));
 					if (args.Silent)
 					{
 						args.Player.SendSuccessMessage(GetString("Spawned a Wall of Flesh."));
